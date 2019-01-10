@@ -121,8 +121,9 @@ class DynamicForm extends VerySimpleModel {
         $fields = $this->getFields();
         $form = new SimpleForm($fields, $source, array(
             'title' => $this->getLocal('title'),
-            'instructions' => $this->getLocal('instructions'))
-        );
+            'instructions' => $this->getLocal('instructions'),
+            'id' => $this->getId(),
+        ));
         return $form;
     }
 
@@ -843,6 +844,10 @@ class DynamicFormField extends VerySimpleModel {
             && $this->hasFlag(self::FLAG_CLIENT_VIEW);
     }
 
+    function addToQuery($query, $name=false) {
+        return $query->values($name ?: $this->get('name'));
+    }
+
     /**
      * Used when updating the form via the admin panel. This represents
      * validation on the form field template, not data entered into a form
@@ -933,7 +938,7 @@ class DynamicFormEntry extends VerySimpleModel {
                 'constraint' => array('form_id' => 'DynamicForm.id'),
             ),
             'answers' => array(
-                'reverse' => 'DynamicFormEntryAnswer.entry'
+                'reverse' => 'DynamicFormEntryAnswer.entry',
             ),
         ),
     );
@@ -946,6 +951,9 @@ class DynamicFormEntry extends VerySimpleModel {
 
     function getId() {
         return $this->get('id');
+    }
+    function getFormId() {
+        return $this->form_id;
     }
 
     function getAnswers() {
@@ -998,7 +1006,8 @@ class DynamicFormEntry extends VerySimpleModel {
             $source = $source ?: $this->getSource();
             $options += array(
                 'title' => $this->getTitle(),
-                'instructions' => $this->getInstructions()
+                'instructions' => $this->getInstructions(),
+                'id' => $this->form_id,
                 );
             $this->_form = new CustomForm($fields, $source, $options);
         }
@@ -1171,8 +1180,9 @@ class DynamicFormEntry extends VerySimpleModel {
             ->filter(array('object_id'=>$object_id, 'object_type'=>$object_type));
     }
 
-    function render($staff=true, $title=false, $options=array()) {
-        return $this->getForm()->render($staff, $title, $options);
+    function render($options=array()) {
+        $options += array('staff' => true);
+        return $this->getForm()->render($options);
     }
 
     function getChanges() {
@@ -1813,11 +1823,12 @@ class SelectionField extends FormField {
 
     function getSearchQ($method, $value, $name=false) {
         $name = $name ?: $this->get('name');
+        $val = '"?'.implode('("|,|$)|"?', array_keys($value)).'("|,|$)';
         switch ($method) {
         case '!includes':
-            return Q::not(array("{$name}__intersect" => array_keys($value)));
+            return Q::not(array("{$name}__regex" => $val));
         case 'includes':
-            return new Q(array("{$name}__intersect" => array_keys($value)));
+            return new Q(array("{$name}__regex" => $val));
         default:
             return parent::getSearchQ($method, $value, $name);
         }

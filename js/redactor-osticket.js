@@ -291,6 +291,7 @@ $(function() {
         var reset = $('input[type=reset]', el.closest('form'));
         if (reset) {
             reset.click(function() {
+<<<<<<< HEAD
                 var file = $('.file', el.closest('form'));
                 if (file)
                     file.remove();
@@ -305,6 +306,12 @@ $(function() {
                         el.redactor('insert.set', '', false, false);
                     }
                 }
+=======
+                if (el.attr('data-draft-id'))
+                    el.redactor('draft.deleteDraft').attr('data-draft-id', '');
+                else
+                    el.redactor('insert.set', '', false, false);
+>>>>>>> 677e12b552b024b6273a8860140b03e93deb68ee
             });
         }
         $('input[type=submit]', el.closest('form')).on('click', function() {
